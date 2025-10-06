@@ -771,7 +771,7 @@
                         <div class="mb-3 border border-indigo-200 p-3 rounded-lg bg-indigo-50">
                             <h4 class="text-lg font-semibold text-indigo-700 mb-3">Course Curriculum Modules</h4>
                             <div id="curriculum-modules-container" class="space-y-4">
-                            </div>
+                                </div>
                             <button type="button" onclick="addCurriculumModule()"
                                 class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 mt-4 text-sm flex items-center justify-center space-x-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1017,8 +1017,7 @@
             <div class="mt-8">
                 <h3 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4 flex items-center">
                     <span class="mr-2 text-indigo-600">📚</span> Enrolled Courses (<span
-                        id="modal-enrolled-count">0</span>)
-                </h3>
+                        id="modal-enrolled-count">0</span>)</h3>
                 <div id="modal-course-list" class="space-y-3">
                 </div>
             </div>
@@ -1037,7 +1036,8 @@
                     </svg>
                 </button>
             </div>
-            <div id="notification-content" class="bg-yellow-50 p-4 rounded-lg text-yellow-900 border border-yellow-200">
+            <div id="notification-content"
+                class="bg-yellow-50 p-4 rounded-lg text-yellow-900 border border-yellow-200">
                 <p class="font-medium text-lg">No active announcements.</p>
             </div>
             <p class="text-xs text-gray-500 mt-4 text-right">Last updated: <span id="notification-timestamp">N/A</span>
@@ -1068,7 +1068,9 @@
 
 
         // Sample Data: COURSE IDs must be unique strings (rich content structure)
-        const courses = [{
+        // CRITICAL FIX: This initial data structure remains, but the application logic
+        // now ensures it is overwritten by/merged with data from Firebase on load.
+        let courses = [{
             id: "web_dev",
             title: "Full Stack Web Development",
             description: "Master modern web development with React, Node.js, and databases",
@@ -1118,7 +1120,7 @@
                 title: "Deployment",
                 content: "<p>Final step: deploy the full stack application to a cloud provider simulation. Learn about hosting, domains, and environment variables. <strong>Task</strong>: Simulate production build and deployment steps. ✅</p>",
                 video_url: "https://www.youtube.com/embed/videoseries?list=PL4-Tl6P4lXwR8iGzXz_k4q6rXm6e_vQ5L"
-            },]
+            }, ]
         }, {
             id: "data_sci",
             title: "Data Science & Analytics",
@@ -1427,7 +1429,7 @@
                 { title: "Content Strategy", content: "<p>Developing a content calendar and defining KPIs for video performance. <strong>Task</strong>: Outline a viral strategy for a product launch.</p>", video_url: "" },
                 { title: "Final Project", content: "<p>Produce and edit a complete 2-3 minute video for a client or portfolio. <strong>Task</strong>: Submit your final edited video file. ✅</p>", video_url: "" },
             ]
-        },];
+        }, ];
 
         const firebaseConfig = {
             apiKey: "AIzaSyBnQ0s1jFoMH6J7vhKVM7NVC-WNScLdA7E",
@@ -1649,55 +1651,70 @@
         // --- Core Application Logic ---
 
         function initializeUI() {
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    if (user.email === ADMIN_EMAIL && user.uid === 'admin-mock-uid') {
-                        // Admin logic handled by local flag
-                    } else {
-                        currentUserId = user.uid;
-                        // Fetch all data including notifications
-                        fetchUserData().then(() => {
-                            updateNav(true, false);
-                            if (document.getElementById('welcome-screen').style.display !== 'none' ||
-                                document.getElementById('login-form').style.display !== 'none' ||
-                                document.getElementById('register-form').style.display !== 'none'
-                            ) {
-                                // Only show dashboard if user is not in the middle of course/cert view
-                                if (document.getElementById('course-learning').style.display === 'none' &&
-                                    document.getElementById('certificate-screen').style.display === 'none') {
-                                    showDashboard();
+            // CRITICAL FIX: Fetch initial course data immediately on load
+            fetchUserData(true).then(() => {
+                auth.onAuthStateChanged((user) => {
+                    if (user) {
+                        if (user.email === ADMIN_EMAIL && user.uid === 'admin-mock-uid') {
+                            // Admin logic handled by local flag
+                        } else {
+                            currentUserId = user.uid;
+                            // Fetch all data including notifications
+                            fetchUserData().then(() => {
+                                updateNav(true, false);
+                                if (document.getElementById('welcome-screen').style.display !== 'none' ||
+                                    document.getElementById('login-form').style.display !== 'none' ||
+                                    document.getElementById('register-form').style.display !== 'none'
+                                ) {
+                                    // Only show dashboard if user is not in the middle of course/cert view
+                                    if (document.getElementById('course-learning').style.display === 'none' &&
+                                        document.getElementById('certificate-screen').style.display === 'none') {
+                                        showDashboard();
+                                    }
                                 }
+                            });
+                        }
+                    } else {
+                        currentUserId = null;
+                        currentUser = null;
+                        updateNav(false, isAdminLoggedIn);
+                        if (!isAdminLoggedIn) {
+                            if (document.getElementById('dashboard-screen').style.display === 'block' ||
+                                document.getElementById('profile-screen').style.display === 'block' ||
+                                document.getElementById('certificates-screen').style.display === 'block' ||
+                                document.getElementById('course-learning').style.display === 'block' ||
+                                document.getElementById('my-account-screen').style.display === 'block'
+                            ) {
+                                showWelcomeScreen();
                             }
-                        });
-                    }
-                } else {
-                    currentUserId = null;
-                    currentUser = null;
-                    updateNav(false, isAdminLoggedIn);
-                    if (!isAdminLoggedIn) {
-                        if (document.getElementById('dashboard-screen').style.display === 'block' ||
-                            document.getElementById('profile-screen').style.display === 'block' ||
-                            document.getElementById('certificates-screen').style.display === 'block' ||
-                            document.getElementById('course-learning').style.display === 'block' ||
-                            document.getElementById('my-account-screen').style.display === 'block'
-                        ) {
-                            showWelcomeScreen();
                         }
                     }
-                }
-            });
+                });
 
-            loadPopularCourses();
+                loadPopularCourses();
+            });
         }
 
-        async function fetchUserData() {
+        // CRITICAL FIX: Added loadCoursesData flag to separate initial course load from user data load
+        async function fetchUserData(loadCoursesData = false) {
             try {
+                if (loadCoursesData) {
+                    const courseSnapshot = await database.ref('edupro_courses').once('value');
+                    const dbCourses = courseSnapshot.val();
+
+                    if (dbCourses && Array.isArray(dbCourses) && dbCourses.length > 0) {
+                        // Overwrite the local sample array with persistent data
+                        courses = dbCourses;
+                        loadPopularCourses(); // Refresh welcome screen previews if courses loaded
+                    }
+                }
+
+                // Continue fetching user-specific data
                 const userSnapshot = await database.ref('edupro_users').once('value');
                 users = userSnapshot.val() ? Object.keys(userSnapshot.val()).map(uid => ({
                     uid,
                     ...userSnapshot.val()[uid]
                 })) : [];
-                // CRITICAL FIX: Ensure currentUser is always the latest version of the logged-in user
                 currentUser = users.find(u => u.uid === currentUserId);
 
                 const certificateSnapshot = await database.ref('certificates').once('value');
@@ -1723,9 +1740,7 @@
 
             } catch (error) {
                 console.error("Error fetching data:", error);
-                users = [];
-                currentUser = null;
-                certificates = [];
+                // Keep local data in case of failure, but log error
             }
         }
 
@@ -2027,6 +2042,7 @@
         }
         function loadPopularCourses() { /* ... unchanged ... */
             const container = document.getElementById('popular-courses-preview');
+            // FIX: Ensure courses array has content before slicing
             const popularCourses = courses.slice(0, 3);
             container.innerHTML = popularCourses.map(renderCourseCard).join('');
         }
@@ -2146,9 +2162,9 @@
                             <h3 class="text-3xl font-bold text-gray-800 mb-4">What you will learn:</h3>
                             <ul class="grid grid-cols-2 gap-4 text-gray-700">
                                 ${course.curriculum.slice(0, 6).map(item => {
-                const itemTitle = typeof item === 'object' && item.title ? item.title : item;
-                return `<li class="flex items-center"><svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> ${itemTitle}</li>`;
-            }).join('')}
+                                    const itemTitle = typeof item === 'object' && item.title ? item.title : item;
+                                    return `<li class="flex items-center"><svg class="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg> ${itemTitle}</li>`;
+                                }).join('')}
                             </ul>
                         </div>
 
@@ -2300,8 +2316,8 @@
             continueLearningContainer.innerHTML = '';
 
             if (activeCourses.length === 0) {
-                continueLearningContainer.innerHTML = `<p class="text-gray-500 py-4">You are not actively enrolled in any courses yet. Enroll now or wait for admin approval!</p>`;
-                return;
+                 continueLearningContainer.innerHTML = `<p class="text-gray-500 py-4">You are not actively enrolled in any courses yet. Enroll now or wait for admin approval!</p>`;
+                 return;
             }
 
             activeCourses.forEach(course => {
@@ -2331,7 +2347,7 @@
 
             // If all actively enrolled courses are certified, show an encouraging message
             if (continueLearningContainer.innerHTML.trim() === '') {
-                continueLearningContainer.innerHTML = `<p class="text-gray-500 py-4">🎉 You've completed all active courses! View your certificates or browse new courses.</p>`;
+                 continueLearningContainer.innerHTML = `<p class="text-gray-500 py-4">🎉 You've completed all active courses! View your certificates or browse new courses.</p>`;
             }
         }
 
@@ -2629,16 +2645,16 @@
                             <div class="flex flex-wrap gap-1">${bgColorsHtml}</div>
                         </div>
                     </div>
-                    
+
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="formatDoc('${targetId}', 'bold')"><strong>B</strong></button>
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="formatDoc('${targetId}', 'italic')"><em>I</em></button>
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="formatDoc('${targetId}', 'underline')"><u>U</u></button>
-                    
+
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="formatDoc('${targetId}', 'insertUnorderedList')">• List</button>
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="formatDoc('${targetId}', 'insertOrderedList')">1. List</button>
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="formatDoc('${targetId}', 'formatBlock', '<h4>')">H4</button>
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="formatDoc('${targetId}', 'formatBlock', '<p>')">P</button>
-                    
+
                     <button type="button" class="p-2 text-gray-700 bg-white rounded-md hover:bg-gray-200 border" onclick="insertImage('${targetId}')">🖼️ Image</button>
                 </div>
             `;
@@ -2769,8 +2785,8 @@
             course.curriculum.forEach(module => addCurriculumModule(module));
         }
 
-        // START: MODIFIED handleCourseSubmit to read dynamic HTML blocks
-        function handleCourseSubmit(event) {
+        // START: MODIFIED handleCourseSubmit to read dynamic HTML blocks AND PERSIST TO FIREBASE
+        async function handleCourseSubmit(event) {
             event.preventDefault();
             const isEdit = document.getElementById('original-course-id').value !== '';
             const courseId = document.getElementById('course-id').value;
@@ -2808,6 +2824,7 @@
             }
 
             const newDuration = `${newCurriculumArray.length} days`;
+            let success = false;
 
             if (isEdit) {
                 const index = courses.findIndex(c => c.id === courseId);
@@ -2816,6 +2833,7 @@
                     courses[index].description = newDescription;
                     courses[index].curriculum = newCurriculumArray;
                     courses[index].duration = newDuration;
+                    success = true;
                 }
             } else {
                 if (courses.some(c => c.id === courseId)) {
@@ -2835,11 +2853,22 @@
                     curriculum: newCurriculumArray
                 };
                 courses.push(newCourse);
+                success = true;
             }
 
-            renderCourseManagerPanel();
-            renderCourseList(courses);
-            alert(`Course "${newTitle}" ${isEdit ? 'updated' : 'added'} successfully!`);
+            if (success) {
+                // CRITICAL FIX: Save the entire updated courses array back to Firebase
+                try {
+                    await database.ref('edupro_courses').set(courses);
+                    renderCourseManagerPanel();
+                    renderCourseList(courses);
+                    loadPopularCourses(); // Refresh previews immediately
+                    alert(`Course "${newTitle}" ${isEdit ? 'updated' : 'added'} successfully and SAVED to database!`);
+                } catch (error) {
+                    console.error("Firebase Save Error:", error);
+                    alert("Error saving course to database. Check console.");
+                }
+            }
         }
         // END: MODIFIED handleCourseSubmit
 
@@ -2848,9 +2877,16 @@
                 const index = courses.findIndex(c => c.id === courseId);
                 if (index !== -1) {
                     courses.splice(index, 1);
-                    renderCourseManagerPanel();
-                    renderCourseList(courses);
-                    alert('Course deleted.');
+                    // CRITICAL FIX: Persist deletion to Firebase
+                    database.ref('edupro_courses').set(courses).then(() => {
+                        renderCourseManagerPanel();
+                        renderCourseList(courses);
+                        loadPopularCourses(); // Refresh previews immediately
+                        alert('Course deleted and changes saved.');
+                    }).catch(error => {
+                        console.error("Firebase Delete Error:", error);
+                        alert("Error deleting course from database.");
+                    });
                 }
             }
         }
@@ -3216,10 +3252,11 @@
             const currentDisabledStatus = user.disabled || false;
             disableBtn.textContent = currentDisabledStatus ? '✅ ENABLE User' : '🚫 DISABLE User';
 
-            disableBtn.className = `px-4 py-2 rounded-lg text-sm transition-colors flex-1 shadow-md font-semibold ${currentDisabledStatus
+            disableBtn.className = `px-4 py-2 rounded-lg text-sm transition-colors flex-1 shadow-md font-semibold ${
+                currentDisabledStatus
                     ? 'bg-green-600 hover:bg-green-700 text-white'
                     : 'bg-yellow-500 hover:bg-yellow-600 text-gray-900'
-                }`;
+            }`;
 
             // Helper function for formatted row
             const DetailRow = (label, value, colorClass = 'text-gray-900', isMonospace = false) => `
